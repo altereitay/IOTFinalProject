@@ -1,0 +1,4 @@
+.idea
+*.png
+env.json
+node_modules
