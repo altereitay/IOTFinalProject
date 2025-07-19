@@ -44,7 +44,6 @@ function setupDoorSensor(switcher, device) {
         if (dis < DISTANCE_THRESHOLD) {
             let enteredToIf = false;
             consecutiveInCount++;
-            console.log(`Close-reading #${consecutiveInCount}`);
 
             if (!personInside && consecutiveInCount >= CONSECUTIVE_REQUIRED && !enteredToIf) {
                 enteredToIf = true;
@@ -58,7 +57,11 @@ function setupDoorSensor(switcher, device) {
                 }
             }
 
-            if (personInside && consecutiveInCount >= CONSECUTIVE_REQUIRED && !enteredToIf && await isOn()) {
+            if (personInside && consecutiveInCount >= CONSECUTIVE_REQUIRED && !enteredToIf) {
+                const deviceOn = await isOn(switcher);
+                if (!deviceOn) {
+                    return
+                }
                 enteredToIf = true;
                 console.log('Person left. Starting timer...');
                 personInside = false;
@@ -122,7 +125,7 @@ async function main() {
     });
 
     device.on('connect', () => {
-        console.log('✅ Connected to AWS IoT');
+        console.log('Connected to AWS IoT');
 
         device.subscribe(envFile.MQTT_TOPIC, err => {
             if (err) {
