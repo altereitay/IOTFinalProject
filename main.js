@@ -19,7 +19,7 @@ async function isOn(switcher) {
 }
 
 function handleAWSMessage(topic, message, switcher) {
-    if (topic !== envFile.MQTT_TOPIC) return;
+    if (topic !== envFile.MQTT_TOPIC || topcic !== envFile.MQTT_TOPIC_USAGE) return;
 
     try {
         const msg = JSON.parse(message);
@@ -40,7 +40,7 @@ function setupDoorSensor(switcher, device) {
     doorHandle.stdout.on('data', async data => {
         const dataString = data.toString().trim();
         const dis = parseFloat(dataString.split(':')[1].split('cm')[0].trim());
-        console.log('🔎 Distance:', dis);
+        // console.log('🔎 Distance:', dis);
 
         if (dis < DISTANCE_THRESHOLD) {
             let enteredToIf = false;
@@ -111,8 +111,8 @@ async function main() {
         };
 
         const payload = JSON.stringify(msg);
-        client.publish(envFile.MQTT_TOPIC, payload);
-        device.publish(envFile.MQTT_TOPIC, payload);
+        client.publish(envFile.MQTT_TOPIC_USAGE, payload);
+        device.publish(envFile.MQTT_TOPIC_USAGE, payload);
     });
 
     // AWS IoT device setup
@@ -150,6 +150,9 @@ async function main() {
     client.on('connect', () => {
         console.log('✅ Connected to local MQTT');
         client.subscribe(envFile.MQTT_TOPIC, err => {
+            if (!err) console.log('✅ Subscribed to local MQTT topic');
+        });
+        client.subscribe(envFile.MQTT_TOPIC_USAGE, err => {
             if (!err) console.log('✅ Subscribed to local MQTT topic');
         });
     });
