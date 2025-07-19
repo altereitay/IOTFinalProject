@@ -5,6 +5,7 @@ import time
 TRIG = 17
 ECHO = 27
 
+GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
@@ -33,7 +34,9 @@ def get_distance():
 try:
     while True:
         dist = get_distance()
-        print(f"Distance: {dist} cm")
+        print(f"Distance: {dist} cm", flush=True)
         time.sleep(1)
 except KeyboardInterrupt:
+    pass
+finally:
     GPIO.cleanup()
