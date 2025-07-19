@@ -11,7 +11,7 @@ let leaveTimer = null;
 let consecutiveInCount = 0;
 const CONSECUTIVE_REQUIRED = 2;
 const DISTANCE_THRESHOLD = 50;
-const TIMER_MS = 10 * 1000; // 10 seconds for testing
+const TIMER_MS = 10 * 1000;
 
 async function isOn(switcher) {
     const state = await switcher.status();
@@ -25,12 +25,12 @@ function handleAWSMessage(topic, message, switcher) {
         const msg = JSON.parse(message);
         if (msg.type === 'device' && msg.device_id === '1') {
             if (msg.action === 'turn_off') {
-                console.log('🔌 Turning off device due to remote AWS command.');
+                console.log('Turning off device due to remote AWS command.');
                 switcher.turn_off();
             }
         }
     } catch (err) {
-        console.error('❌ Failed to parse AWS IoT message:', err);
+        console.error('Failed to parse AWS IoT message:', err);
     }
 }
 
@@ -40,31 +40,30 @@ function setupDoorSensor(switcher, device) {
     doorHandle.stdout.on('data', async data => {
         const dataString = data.toString().trim();
         const dis = parseFloat(dataString.split(':')[1].split('cm')[0].trim());
-        // console.log('🔎 Distance:', dis);
 
         if (dis < DISTANCE_THRESHOLD) {
             let enteredToIf = false;
             consecutiveInCount++;
-            console.log(`🟢 Close-reading #${consecutiveInCount}`);
+            console.log(`Close-reading #${consecutiveInCount}`);
 
             if (!personInside && consecutiveInCount >= CONSECUTIVE_REQUIRED && !enteredToIf) {
                 enteredToIf = true;
-                console.log('🚪 Person returned.');
+                console.log('Person returned.');
                 personInside = true;
 
                 if (leaveTimer) {
                     clearTimeout(leaveTimer);
                     leaveTimer = null;
-                    console.log('🛑 Timer cancelled.');
+                    console.log('Timer cancelled.');
                 }
             }
 
-            if (personInside && consecutiveInCount >= CONSECUTIVE_REQUIRED && !enteredToIf) {
+            if (personInside && consecutiveInCount >= CONSECUTIVE_REQUIRED && !enteredToIf && await isOn()) {
                 enteredToIf = true;
-                console.log('🚪 Person left. Starting timer...');
+                console.log('Person left. Starting timer...');
                 personInside = false;
                 leaveTimer = setTimeout(() => {
-                    console.log('⏰ Timer finished — triggering AWS IoT message...');
+                    console.log('Timer finished — triggering AWS IoT message...');
                     const snsPayload = JSON.stringify({
                         type: 'SNS',
                         value: 'send'
@@ -74,7 +73,7 @@ function setupDoorSensor(switcher, device) {
             }
 
         } else {
-            consecutiveInCount = 0; // reset on any far reading
+            consecutiveInCount = 0;
         }
     });
 
@@ -88,7 +87,6 @@ function setupDoorSensor(switcher, device) {
 }
 
 async function main() {
-    // Initialize Switcher
     const switcher = new Switcher(
         envFile.DEVICE_ID,
         envFile.DEVICE_IP,
@@ -115,7 +113,6 @@ async function main() {
         device.publish(envFile.MQTT_TOPIC_USAGE, payload);
     });
 
-    // AWS IoT device setup
     const device = awsIot.device({
         keyPath: './certs/eitay_raspberrypi4.private.key',
         certPath: './certs/eitay_raspberrypi4.cert.pem',
@@ -127,38 +124,35 @@ async function main() {
     device.on('connect', () => {
         console.log('✅ Connected to AWS IoT');
 
-        // Subscribe to AWS topic
         device.subscribe(envFile.MQTT_TOPIC, err => {
             if (err) {
-                console.error('❌ Failed to subscribe to AWS topic:', err);
+                console.error('Failed to subscribe to AWS topic:', err);
             } else {
-                console.log('✅ Subscribed to AWS IoT topic');
+                console.log('Subscribed to AWS IoT topic');
             }
         });
     });
 
     device.on('error', err => {
-        console.error('❌ AWS IoT Error:', err);
+        console.error('AWS IoT Error:', err);
     });
 
     device.on('message', (topic, message) => {
         handleAWSMessage(topic, message, switcher);
     });
 
-    // Optional: Local MQTT client (for LAN use)
     const client = mqtt.connect(`${envFile.MQTT_IP}:1883`);
     client.on('connect', () => {
-        console.log('✅ Connected to local MQTT');
+        console.log('Connected to local MQTT');
         client.subscribe(envFile.MQTT_TOPIC, err => {
-            if (!err) console.log('✅ Subscribed to local MQTT topic');
+            if (!err) console.log('Subscribed to local MQTT topic');
         });
         client.subscribe(envFile.MQTT_TOPIC_USAGE, err => {
-            if (!err) console.log('✅ Subscribed to local MQTT topic');
+            if (!err) console.log('Subscribed to local MQTT topic');
         });
     });
 
-    // Launch ultrasonic distance sensor logic
     setupDoorSensor(switcher, device);
 }
 
-main().catch(err => console.error('❌ Main error:', err));
+main().catch(err => console.error('Main error:', err));
