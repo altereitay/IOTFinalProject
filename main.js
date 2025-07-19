@@ -19,7 +19,7 @@ async function isOn(switcher) {
 }
 
 function handleAWSMessage(topic, message, switcher) {
-    if (topic !== envFile.MQTT_TOPIC || topcic !== envFile.MQTT_TOPIC_USAGE) return;
+    if (topic !== envFile.MQTT_TOPIC) return;
 
     try {
         const msg = JSON.parse(message);
